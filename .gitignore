@@ -20,7 +20,7 @@ db.sqlite3
 
 # Archivos estáticos recolectados (se generan en producción)
 staticfiles/
-static/
+
 
 # Archivos de SO
 .DS_Store
