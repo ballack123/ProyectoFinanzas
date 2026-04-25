@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block page_title %}Generar Reporte Completo{% endblock %}
+{% block page_subtitle %}Generar PDF y Enviar por Correo{% endblock %}
+
+{% block nav_reporte %}active{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <div class="card-header">
+        <h3>Configuración de Envío de PDF</h3>
+    </div>
+    <div class="card-body">
+        <p>Esta herramienta agrupará el Libro Diario, Balance de Comprobación y Estado de Resultados en un solo archivo PDF para la empresa que indiques.</p>
+        <form method="POST" action="{% url 'reporte_completo' %}">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Nombre de la Empresa</label>
+                <input type="text" name="empresa" class="form-control" required placeholder="Ej: Mi Empresa S.A.C." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Correo Electrónico Destino</label>
+                <input type="email" name="correo" class="form-control" required placeholder="ejemplo@gmail.com" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <small style="color: #666;">El PDF será enviado como archivo adjunto a este correo.</small>
+            </div>
+            <div style="text-align: center;">
+                <button type="submit" class="btn btn-primary" style="font-size: 16px; padding: 10px 20px;">✉️ Generar y Enviar Reporte</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -47,6 +47,11 @@
                 <a href="{% url 'balance_general' %}" class="nav-link {% block nav_balance_gen %}{% endblock %}">
                     <span class="nav-icon">🏦</span> Balance General
                 </a>
+
+                <div class="nav-section" style="margin-top: 20px;">Descargas</div>
+                <a href="{% url 'reporte_completo' %}" class="nav-link {% block nav_reporte %}{% endblock %}" style="background-color: #2980b9; color: white;">
+                    <span class="nav-icon">📩</span> Generar PDF / Enviar
+                </a>
             </nav>
         </aside>
 

@@ -15,7 +15,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Sum
 from decimal import Decimal, InvalidOperation
+from django.conf import settings
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from xhtml2pdf import pisa
+from io import BytesIO
 from .models import CuentaContable, AsientoContable, Movimiento
+from .reporte_utils import get_reporte_context
 
 
 # ─── PÁGINA PRINCIPAL ──────────────────────────────────────────────────────────
@@ -555,4 +562,50 @@ def balance_general(request):
         'ec_total_acreedor': ec_total_acreedor,
     }
     return render(request, 'balance_general.html', context)
+
+
+# ─── REPORTE COMPLETO EN PDF ───────────────────────────────────────────────────
+
+def reporte_completo(request):
+    """
+    Vista que muestra el formulario para solicitar el reporte completo.
+    Al recibir POST, genera el PDF y lo envía por correo electrónico.
+    """
+    if request.method == 'POST':
+        empresa = request.POST.get('empresa', 'Mi Empresa')
+        correo = request.POST.get('correo', '')
+
+        # Obtener todos los datos del reporte usando la función auxiliar
+        context = get_reporte_context()
+        context['empresa'] = empresa
+
+        # Renderizar el HTML a un string
+        html = render_to_string('reporte_pdf.html', context)
+
+        # Generar PDF en memoria
+        pdf_file = BytesIO()
+        pisa_status = pisa.CreatePDF(BytesIO(html.encode('UTF-8')), dest=pdf_file)
+
+        if pisa_status.err:
+            messages.error(request, 'Ocurrió un error al generar el PDF.')
+            return redirect('reporte_completo')
+
+        if correo:
+            try:
+                # Crear y enviar el correo
+                email = EmailMessage(
+                    subject=f'Reporte Financiero Completo - {empresa}',
+                    body=f'Hola,\n\nAdjunto encontrarás el reporte financiero completo de {empresa} generado por el Sistema Contable ContaSys.\n\nSaludos!',
+                    from_email=settings.EMAIL_HOST_USER,
+                    to=[correo]
+                )
+                email.attach('Reporte_Completo.pdf', pdf_file.getvalue(), 'application/pdf')
+                email.send(fail_silently=False)
+                messages.success(request, f'¡Éxito! El reporte PDF de "{empresa}" fue enviado a {correo}. Revisa tu bandeja de entrada.')
+            except Exception as e:
+                messages.error(request, f'Error al enviar el correo. Verifica tu configuración en el archivo .env. Detalle: {str(e)}')
+            
+            return redirect('reporte_completo')
+
+    return render(request, 'menu_reporte.html')
 
