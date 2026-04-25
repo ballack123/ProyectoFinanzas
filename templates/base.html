@@ -1,0 +1,87 @@
+{% load static %}
+{% load contable_tags %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistema Contable - Gestión de asientos contables y reportes financieros">
+    <title>{% block title %}Sistema Contable{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <div class="layout">
+        <!-- ═══ SIDEBAR ═══ -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <h1><span class="brand-icon">📊</span> ContaSys</h1>
+                <small>Sistema Contable v1.0</small>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">Principal</div>
+                <a href="{% url 'index' %}" class="nav-link {% block nav_index %}{% endblock %}">
+                    <span class="nav-icon">🏠</span> Inicio
+                </a>
+
+                <div class="nav-section">Operaciones</div>
+                <a href="{% url 'gestionar_cuentas' %}" class="nav-link {% block nav_cuentas %}{% endblock %}">
+                    <span class="nav-icon">📋</span> Plan de Cuentas
+                </a>
+                <a href="{% url 'registrar_asiento' %}" class="nav-link {% block nav_registrar %}{% endblock %}">
+                    <span class="nav-icon">✏️</span> Registrar Asiento
+                </a>
+
+                <div class="nav-section">Reportes</div>
+                <a href="{% url 'libro_diario' %}" class="nav-link {% block nav_diario %}{% endblock %}">
+                    <span class="nav-icon">📖</span> Libro Diario
+                </a>
+                <a href="{% url 'libro_mayor' %}" class="nav-link {% block nav_mayor %}{% endblock %}">
+                    <span class="nav-icon">📚</span> Libro Mayor
+                </a>
+                <a href="{% url 'balance_comprobacion' %}" class="nav-link {% block nav_balance_comp %}{% endblock %}">
+                    <span class="nav-icon">⚖️</span> Balance de Comprobación
+                </a>
+                <a href="{% url 'estado_resultados' %}" class="nav-link {% block nav_eerr %}{% endblock %}">
+                    <span class="nav-icon">📈</span> Estado de Resultados
+                </a>
+                <a href="{% url 'balance_general' %}" class="nav-link {% block nav_balance_gen %}{% endblock %}">
+                    <span class="nav-icon">🏦</span> Balance General
+                </a>
+            </nav>
+        </aside>
+
+        <!-- ═══ MAIN CONTENT ═══ -->
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h2>{% block page_title %}Sistema Contable{% endblock %}</h2>
+                    <div class="header-subtitle">{% block page_subtitle %}{% endblock %}</div>
+                </div>
+                <div>
+                    {% block page_actions %}{% endblock %}
+                </div>
+            </div>
+
+            <div class="content-area">
+                <!-- Mensajes del sistema -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">
+                            {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% elif message.tags == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </div>
+
+            <div class="footer">
+                <p>© 2026 ContaSys — Sistema Contable | Desarrollado con Django & SQLite</p>
+            </div>
+        </main>
+    </div>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
