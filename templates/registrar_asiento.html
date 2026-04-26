@@ -70,6 +70,41 @@
     </div>
 </div>
 
+<div class="card" style="margin-top: 24px;">
+    <div class="card-header">
+        <h3>📋 Asientos Ya Registrados</h3>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <table class="table" style="margin-bottom: 0;">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Descripción</th>
+                    <th># Movimientos</th>
+                    <th class="text-center" style="width: 180px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asiento in asientos_registrados %}
+                <tr>
+                    <td>{{ asiento.fecha|date:"d/m/Y" }}</td>
+                    <td><strong>Asiento #{{ asiento.id }}</strong> - {{ asiento.descripcion|default:"Sin descripción" }}</td>
+                    <td>{{ asiento.movimientos.count }} líneas</td>
+                    <td class="text-center">
+                        <a href="{% url 'editar_asiento' asiento.id %}" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 0.85rem;">✏️ Editar</a>
+                        <a href="{% url 'eliminar_asiento' asiento.id %}" class="btn btn-danger btn-sm" style="padding: 4px 8px; font-size: 0.85rem;" onclick="return confirm('¿Eliminar este asiento permanentemente?');">🗑️ Eliminar</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center" style="padding: 20px; color: #666;">No hay asientos registrados actualmente.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}

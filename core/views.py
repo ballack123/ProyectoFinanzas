@@ -218,8 +218,11 @@ def registrar_asiento(request):
             )
             return redirect('libro_diario')
 
+    asientos_registrados = AsientoContable.objects.prefetch_related('movimientos__cuenta').order_by('-fecha', '-id')
+
     context = {
         'cuentas': cuentas,
+        'asientos_registrados': asientos_registrados,
     }
     return render(request, 'registrar_asiento.html', context)
 
