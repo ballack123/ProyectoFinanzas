@@ -231,12 +231,12 @@ def libro_diario(request):
     Muestra todos los asientos contables ordenados cronológicamente.
     Cada asiento se despliega con sus movimientos al Debe y al Haber.
     """
-    asientos = AsientoContable.objects.prefetch_related(
-        'movimientos__cuenta'
-    ).all()
-
+    asientos = AsientoContable.objects.prefetch_related('movimientos__cuenta').order_by('fecha', 'id')
+    cuentas = CuentaContable.objects.all()
+    
     context = {
         'asientos': asientos,
+        'cuentas': cuentas,
     }
     return render(request, 'libro_diario.html', context)
 
@@ -255,7 +255,8 @@ def libro_mayor(request):
 
     datos_cuentas = []
     for cuenta in cuentas:
-        movimientos = cuenta.movimientos.select_related('asiento').order_by('asiento__fecha')
+        # AQUÍ ESTÁ EL CAMBIO DE FECHAS: order_by('asiento__fecha', 'asiento__id')
+        movimientos = cuenta.movimientos.select_related('asiento').order_by('asiento__fecha', 'asiento__id')
         if not movimientos.exists():
             continue
 
@@ -342,16 +343,9 @@ def balance_comprobacion(request):
 
 def estado_resultados(request):
     """
-    Estado de Resultados con desglose completo:
-    Ventas - Costo de Ventas = UTILIDAD BRUTA
-    - Gastos Operativos = UTILIDAD OPERATIVA
-    - Gastos Financieros +/- Otros = UTILIDAD ANTES DE IMPUESTO
-    - Impuesto a la Renta (30%) = UTILIDAD NETA
-
-    La subcategoría de cada cuenta de gasto determina su ubicación en el reporte.
+    Estado de Resultados con desglose completo.
     """
     def saldo_cuenta(cuenta):
-        """Calcula el saldo de una cuenta según su naturaleza."""
         t_debe = cuenta.movimientos.filter(tipo='debe').aggregate(
             total=Sum('monto'))['total'] or Decimal('0')
         t_haber = cuenta.movimientos.filter(tipo='haber').aggregate(
@@ -362,7 +356,6 @@ def estado_resultados(request):
             return t_haber - t_debe
 
     def obtener_items(queryset):
-        """Obtiene la lista de cuentas con saldo != 0 y su total."""
         items = []
         total = Decimal('0')
         for c in queryset:
@@ -372,33 +365,24 @@ def estado_resultados(request):
                 total += s
         return items, total
 
-    # 1. VENTAS (ingresos principales, excluyendo "otro_ingreso")
     ventas, total_ventas = obtener_items(
         CuentaContable.objects.filter(tipo='ingreso').exclude(subcategoria='otro_ingreso')
     )
-
-    # 2. COSTO DE VENTAS
     costo_ventas, total_costo_ventas = obtener_items(
         CuentaContable.objects.filter(tipo='gasto', subcategoria='costo_ventas')
     )
-
     utilidad_bruta = total_ventas - total_costo_ventas
 
-    # 3. GASTOS OPERATIVOS (administrativos e incluye gastos sin subcategoría específica)
     gastos_operativos, total_gastos_operativos = obtener_items(
         CuentaContable.objects.filter(tipo='gasto').exclude(
             subcategoria__in=['costo_ventas', 'gasto_financiero', 'otro_gasto']
         )
     )
-
     utilidad_operativa = utilidad_bruta - total_gastos_operativos
 
-    # 4. GASTOS FINANCIEROS
     gastos_financieros, total_gastos_financieros = obtener_items(
         CuentaContable.objects.filter(tipo='gasto', subcategoria='gasto_financiero')
     )
-
-    # 5. OTROS INGRESOS / GASTOS
     otros_ingresos, total_otros_ingresos = obtener_items(
         CuentaContable.objects.filter(tipo='ingreso', subcategoria='otro_ingreso')
     )
@@ -413,7 +397,6 @@ def estado_resultados(request):
         - total_otros_gastos
     )
 
-    # 6. IMPUESTO A LA RENTA (30%)
     tasa_impuesto = Decimal('30')
     if utilidad_antes_impuesto > 0:
         impuesto = (utilidad_antes_impuesto * tasa_impuesto / Decimal('100')).quantize(Decimal('0.01'))
@@ -423,20 +406,14 @@ def estado_resultados(request):
     utilidad_neta = utilidad_antes_impuesto - impuesto
 
     context = {
-        'ventas': ventas,
-        'total_ventas': total_ventas,
-        'costo_ventas': costo_ventas,
-        'total_costo_ventas': total_costo_ventas,
+        'ventas': ventas, 'total_ventas': total_ventas,
+        'costo_ventas': costo_ventas, 'total_costo_ventas': total_costo_ventas,
         'utilidad_bruta': utilidad_bruta,
-        'gastos_operativos': gastos_operativos,
-        'total_gastos_operativos': total_gastos_operativos,
+        'gastos_operativos': gastos_operativos, 'total_gastos_operativos': total_gastos_operativos,
         'utilidad_operativa': utilidad_operativa,
-        'gastos_financieros': gastos_financieros,
-        'total_gastos_financieros': total_gastos_financieros,
-        'otros_ingresos': otros_ingresos,
-        'total_otros_ingresos': total_otros_ingresos,
-        'otros_gastos': otros_gastos,
-        'total_otros_gastos': total_otros_gastos,
+        'gastos_financieros': gastos_financieros, 'total_gastos_financieros': total_gastos_financieros,
+        'otros_ingresos': otros_ingresos, 'total_otros_ingresos': total_otros_ingresos,
+        'otros_gastos': otros_gastos, 'total_otros_gastos': total_otros_gastos,
         'utilidad_antes_impuesto': utilidad_antes_impuesto,
         'tasa_impuesto': tasa_impuesto,
         'impuesto': impuesto,
@@ -450,20 +427,8 @@ def estado_resultados(request):
 def balance_general(request):
     """
     Estado de Situación Financiera con verificación de la ecuación contable.
-
-    En Patrimonio se incluye "Resultados Acumulados" que es igual a la
-    Utilidad Antes de Impuesto (ya que el impuesto no se registra como
-    asiento contable, solo se calcula en el Estado de Resultados).
-
-    Incluye:
-    - Activos
-    - Pasivos
-    - Patrimonio (con Resultados Acumulados)
-    - Resumen de la Ecuación Contable
-    - Comprobación: Activo = Pasivo + Patrimonio
     """
     def calcular_saldos_por_tipo(tipo_cuenta, deudora=True):
-        """Calcula saldos de todas las cuentas de un tipo dado."""
         cuentas = CuentaContable.objects.filter(tipo=tipo_cuenta)
         items = []
         total = Decimal('0')
@@ -478,28 +443,18 @@ def balance_general(request):
                 total += saldo
         return items, total
 
-    # Activos (naturaleza deudora)
     activos, total_activos = calcular_saldos_por_tipo('activo', deudora=True)
-
-    # Pasivos (naturaleza acreedora)
     pasivos, total_pasivos = calcular_saldos_por_tipo('pasivo', deudora=False)
-
-    # Patrimonio (naturaleza acreedora)
     patrimonio, total_patrimonio = calcular_saldos_por_tipo('patrimonio', deudora=False)
 
-    # Calcular Resultados Acumulados = Utilidad Antes de Impuesto
-    # (Es la utilidad calculada de las cuentas, sin el impuesto que solo
-    #  se calcula en el EE.RR. pero no se registra como asiento)
     _, total_ingresos = calcular_saldos_por_tipo('ingreso', deudora=False)
     _, total_gastos = calcular_saldos_por_tipo('gasto', deudora=True)
-    resultados_acumulados = total_ingresos - total_gastos  # = Utilidad antes de impuesto
+    resultados_acumulados = total_ingresos - total_gastos  
 
     total_patrimonio_con_resultados = total_patrimonio + resultados_acumulados
     total_pasivo_patrimonio = total_pasivos + total_patrimonio_con_resultados
     esta_balanceado = total_activos == total_pasivo_patrimonio
 
-    # Resumen de la Ecuación Contable (para la tabla inferior)
-    # Totales de Debe y Haber por categoría
     def totales_debe_haber(tipo_cuenta):
         cuentas = CuentaContable.objects.filter(tipo=tipo_cuenta)
         total_d = Decimal('0')
@@ -543,22 +498,14 @@ def balance_general(request):
     ec_total_acreedor = sum(e['saldo_acreedor'] for e in ecuacion_resumen)
 
     context = {
-        'activos': activos,
-        'pasivos': pasivos,
-        'patrimonio': patrimonio,
-        'total_activos': total_activos,
-        'total_pasivos': total_pasivos,
-        'total_patrimonio': total_patrimonio,
-        'resultados_acumulados': resultados_acumulados,
+        'activos': activos, 'pasivos': pasivos, 'patrimonio': patrimonio,
+        'total_activos': total_activos, 'total_pasivos': total_pasivos,
+        'total_patrimonio': total_patrimonio, 'resultados_acumulados': resultados_acumulados,
         'es_utilidad': resultados_acumulados >= 0,
         'total_patrimonio_con_resultados': total_patrimonio_con_resultados,
-        'total_pasivo_patrimonio': total_pasivo_patrimonio,
-        'esta_balanceado': esta_balanceado,
-        # Ecuación contable
-        'ecuacion_resumen': ecuacion_resumen,
-        'ec_total_debe': ec_total_debe,
-        'ec_total_haber': ec_total_haber,
-        'ec_total_deudor': ec_total_deudor,
+        'total_pasivo_patrimonio': total_pasivo_patrimonio, 'esta_balanceado': esta_balanceado,
+        'ecuacion_resumen': ecuacion_resumen, 'ec_total_debe': ec_total_debe,
+        'ec_total_haber': ec_total_haber, 'ec_total_deudor': ec_total_deudor,
         'ec_total_acreedor': ec_total_acreedor,
     }
     return render(request, 'balance_general.html', context)
@@ -575,14 +522,10 @@ def reporte_completo(request):
         empresa = request.POST.get('empresa', 'Mi Empresa')
         correo = request.POST.get('correo', '')
 
-        # Obtener todos los datos del reporte usando la función auxiliar
         context = get_reporte_context()
         context['empresa'] = empresa
 
-        # Renderizar el HTML a un string
         html = render_to_string('reporte_pdf.html', context)
-
-        # Generar PDF en memoria
         pdf_file = BytesIO()
         pisa_status = pisa.CreatePDF(BytesIO(html.encode('UTF-8')), dest=pdf_file)
 
@@ -592,7 +535,6 @@ def reporte_completo(request):
 
         if correo:
             try:
-                # Crear y enviar el correo
                 email = EmailMessage(
                     subject=f'Reporte Financiero Completo - {empresa}',
                     body=f'Hola,\n\nAdjunto encontrarás el reporte financiero completo de {empresa} generado por el Sistema Contable ContaSys.\n\nSaludos!',
@@ -609,3 +551,45 @@ def reporte_completo(request):
 
     return render(request, 'menu_reporte.html')
 
+def eliminar_asiento(request, asiento_id):
+    """
+    Elimina un asiento contable específico y todos sus movimientos asociados.
+    """
+    asiento = get_object_or_404(AsientoContable, id=asiento_id)
+    
+    # Guardamos el ID para el mensaje de éxito antes de borrarlo
+    asiento_num = asiento.id 
+    
+    # Al eliminar el asiento, los movimientos se borran en cascada 
+    # por el models.CASCADE que tienes en tu modelo
+    asiento.delete()
+    
+    messages.success(request, f'El Asiento #{asiento_num} fue eliminado correctamente.')
+    return redirect('libro_diario')
+
+# --- AÑADIR AL FINAL DE core/views.py ---
+
+def editar_asiento(request, asiento_id):
+    asiento = get_object_or_404(AsientoContable, id=asiento_id)
+    if request.method == 'POST':
+        # 1. Actualizamos cabecera
+        asiento.fecha = request.POST.get('fecha')
+        asiento.descripcion = request.POST.get('descripcion')
+        asiento.save()
+        
+        # 2. Reemplazamos movimientos (borramos antiguos y creamos nuevos)
+        asiento.movimientos.all().delete()
+        num_movs = int(request.POST.get('num_movimientos', 0))
+        for i in range(num_movs):
+            cuenta_id = request.POST.get(f'cuenta_{i}')
+            tipo = request.POST.get(f'tipo_{i}')
+            monto = request.POST.get(f'monto_{i}')
+            if cuenta_id and monto:
+                Movimiento.objects.create(
+                    asiento=asiento,
+                    cuenta_id=cuenta_id,
+                    tipo=tipo,
+                    monto=monto
+                )
+        messages.success(request, f"Asiento actualizado correctamente.")
+    return redirect('libro_diario')

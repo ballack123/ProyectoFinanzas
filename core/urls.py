@@ -15,6 +15,8 @@ urlpatterns = [
 
     # Registro de asientos
     path('asientos/registrar/', views.registrar_asiento, name='registrar_asiento'),
+    path('asientos/eliminar/<int:asiento_id>/', views.eliminar_asiento, name='eliminar_asiento'),
+    path('asientos/editar/<int:asiento_id>/', views.editar_asiento, name='editar_asiento'),
 
     # Reportes
     path('reportes/libro-diario/', views.libro_diario, name='libro_diario'),

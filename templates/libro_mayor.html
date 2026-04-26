@@ -11,32 +11,42 @@
     <div class="tcuentas-grid">
     {% for dato in datos_cuentas %}
         <div class="tcuenta-card">
-            <!-- Título de la cuenta -->
             <div class="tcuenta-header">
                 <strong>{{ dato.cuenta.codigo }}</strong>&nbsp;&nbsp;{{ dato.cuenta.nombre|upper }}
             </div>
 
-            <!-- Cuerpo de la T -->
             <div class="tcuenta-body">
                 <table class="tcuenta-table">
                     <thead>
                         <tr>
-                            <th colspan="2" class="text-center tcuenta-th-debe">D</th>
-                            <th colspan="2" class="text-center tcuenta-th-haber">H</th>
+                            <th colspan="3" class="text-center tcuenta-th-debe">DEBE</th>
+                            <th colspan="3" class="text-center tcuenta-th-haber">HABER</th>
+                        </tr>
+                        <tr class="tcuenta-subheader">
+                            <th class="text-center">Fecha</th>
+                            <th class="text-center">Ref</th>
+                            <th class="text-right">Monto</th>
+                            <th class="text-center">Fecha</th>
+                            <th class="text-center">Ref</th>
+                            <th class="text-right">Monto</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for mov in dato.movimientos %}
                         <tr>
                             {% if mov.tipo == 'debe' %}
-                                <td class="tcuenta-num">{{ mov.asiento.id }}</td>
+                                <td class="tcuenta-fecha text-center">{{ mov.asiento.fecha|date:"d/m/y" }}</td>
+                                <td class="tcuenta-num text-center">#{{ mov.asiento.id }}</td>
                                 <td class="tcuenta-monto text-right">{{ mov.monto|formato_moneda }}</td>
+                                <td class="tcuenta-fecha"></td>
                                 <td class="tcuenta-num"></td>
                                 <td class="tcuenta-monto text-right"></td>
                             {% else %}
+                                <td class="tcuenta-fecha"></td>
                                 <td class="tcuenta-num"></td>
                                 <td class="tcuenta-monto text-right"></td>
-                                <td class="tcuenta-num">{{ mov.asiento.id }}</td>
+                                <td class="tcuenta-fecha text-center">{{ mov.asiento.fecha|date:"d/m/y" }}</td>
+                                <td class="tcuenta-num text-center">#{{ mov.asiento.id }}</td>
                                 <td class="tcuenta-monto text-right">{{ mov.monto|formato_moneda }}</td>
                             {% endif %}
                         </tr>
@@ -44,11 +54,11 @@
                     </tbody>
                     <tfoot>
                         <tr class="tcuenta-totals">
-                            <td colspan="2" class="text-right monto">{{ dato.total_debe|formato_moneda }}</td>
-                            <td colspan="2" class="text-right monto">{{ dato.total_haber|formato_moneda }}</td>
+                            <td colspan="3" class="text-right monto">{{ dato.total_debe|formato_moneda }}</td>
+                            <td colspan="3" class="text-right monto">{{ dato.total_haber|formato_moneda }}</td>
                         </tr>
                         <tr class="tcuenta-saldo">
-                            <td colspan="4" class="text-center">
+                            <td colspan="6" class="text-center">
                                 {% if dato.cuenta.naturaleza_deudora %}
                                     <strong>SALDO DEUDOR</strong>&nbsp;&nbsp;&nbsp;
                                 {% else %}
@@ -79,7 +89,7 @@
     /* Grid de cuentas T */
     .tcuentas-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); /* Un poco más ancho para que entren las fechas */
         gap: 20px;
     }
 
@@ -127,21 +137,41 @@
         color: #276749;
     }
 
-    .tcuenta-table tbody td {
-        padding: 6px 10px;
-        border-bottom: 1px solid #f0f4f8;
+    .tcuenta-subheader th {
+        font-size: 0.75rem;
+        color: #718096;
+        background-color: #f8fafc;
+        padding: 4px 8px;
+        border-bottom: 1px solid #e2e8f0;
     }
-    .tcuenta-table tbody td:nth-child(2) {
+    
+    .tcuenta-subheader th:nth-child(3) {
         border-right: 2px solid var(--primary);
     }
 
+    .tcuenta-table tbody td {
+        padding: 6px 8px;
+        border-bottom: 1px solid #f0f4f8;
+    }
+    .tcuenta-table tbody td:nth-child(3) {
+        border-right: 2px solid var(--primary);
+    }
+
+    .tcuenta-fecha {
+        width: 65px;
+        font-size: 0.75rem;
+        color: #4a5568;
+    }
+    
     .tcuenta-num {
-        width: 30px;
-        font-size: 0.78rem;
+        width: 40px;
+        font-size: 0.75rem;
         color: var(--text-light);
     }
+    
     .tcuenta-monto {
         font-variant-numeric: tabular-nums;
+        font-weight: 500;
     }
 
     .tcuenta-totals td {

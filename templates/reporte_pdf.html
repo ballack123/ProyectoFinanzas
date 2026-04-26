@@ -26,33 +26,10 @@
         .text-center { text-align: center; }
         .page-break { page-break-before: always; }
         .total-row { font-weight: bold; background-color: #ecf0f1; }
-
-        /* Clases nuevas para Libro Diario */
-        .table-main {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 9pt;
-        }
-        .table-main th {
-            background-color: #2c3e50;
-            color: white;
-            padding: 6px;
-            text-align: center;
-        }
-        .table-main td {
-            border: 1px solid #ccc;
-            padding: 5px;
-        }
-        .asiento-header {
-            background-color: #dfe6e9;
-            font-weight: bold;
-        }
-        .mov-row td {
-            background-color: #ffffff;
-        }
-        .cuenta {
-            padding-left: 15px;
-        }
+        .table-main { width: 100%; border-collapse: collapse; font-size: 9pt; }
+        .asiento-header { background-color: #dfe6e9; font-weight: bold; }
+        .cuenta { padding-left: 15px; }
+        .mayor-titulo { background-color: #2c3e50; color: white; padding: 5px; font-weight: bold; text-align: center; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -60,7 +37,6 @@
         Generado por ContaSys | Página <pdf:pagenumber> de <pdf:pagecount>
     </div>
 
-    <!-- PORTADA -->
     <div style="text-align: center; margin-top: 8cm;">
         <h1 style="font-size: 26pt;">REPORTE FINANCIERO COMPLETO</h1>
         <hr style="width: 50%; border: 1px solid #2c3e50; margin: 20px auto;">
@@ -69,7 +45,6 @@
         <p style="font-size: 12pt;">Fecha de Generación: {% now "d \d\e F \d\e Y" %}</p>
     </div>
 
-    <!-- LIBRO DIARIO -->
     <div class="page-break">
         <h1>{{ empresa }}</h1>
         <h2>LIBRO DIARIO</h2>
@@ -84,50 +59,25 @@
             </thead>
             <tbody>
                 {% for asiento in asientos %}
-                    <!-- CABECERA DEL ASIENTO -->
                     <tr class="asiento-header">
-                        <td class="text-center">
-                            <strong>{{ asiento.fecha|date:"d/m/Y" }}</strong>
-                        </td>
-                        <td>
-                            Asiento #{{ asiento.id }}: {{ asiento.descripcion }}
-                        </td>
+                        <td class="text-center"><strong>{{ asiento.fecha|date:"d/m/Y" }}</strong></td>
+                        <td>Asiento #{{ asiento.id }}: {{ asiento.descripcion }}</td>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                     </tr>
-        
-                    <!-- MOVIMIENTOS -->
                     {% for mov in asiento.movimientos.all %}
                     <tr class="mov-row">
                         <td>&nbsp;</td>
-                        <td class="cuenta">
-                            {{ mov.cuenta.codigo }} - {{ mov.cuenta.nombre }}
-                        </td>
-                        <td class="text-right">
-                            {% if mov.tipo == 'debe' %}
-                                {{ mov.monto|floatformat:2 }}
-                            {% else %}&nbsp;{% endif %}
-                        </td>
-                        <td class="text-right">
-                            {% if mov.tipo == 'haber' %}
-                                {{ mov.monto|floatformat:2 }}
-                            {% else %}&nbsp;{% endif %}
-                        </td>
+                        <td class="cuenta">{{ mov.cuenta.codigo }} - {{ mov.cuenta.nombre }}</td>
+                        <td class="text-right">{% if mov.tipo == 'debe' %}{{ mov.monto|floatformat:2 }}{% else %}&nbsp;{% endif %}</td>
+                        <td class="text-right">{% if mov.tipo == 'haber' %}{{ mov.monto|floatformat:2 }}{% else %}&nbsp;{% endif %}</td>
                     </tr>
                     {% endfor %}
-                {% empty %}
-                    <tr>
-                        <td>-</td>
-                        <td class="text-center">No hay asientos registrados.</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                    </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <!-- BALANCE DE COMPROBACIÓN -->
     <div class="page-break">
         <h1>{{ empresa }}</h1>
         <h2>BALANCE DE COMPROBACIÓN</h2>
@@ -152,21 +102,57 @@
                     <td class="text-right">{% if row.saldo_deudor > 0 %}{{ row.saldo_deudor|floatformat:2 }}{% else %}&nbsp;{% endif %}</td>
                     <td class="text-right">{% if row.saldo_acreedor > 0 %}{{ row.saldo_acreedor|floatformat:2 }}{% else %}&nbsp;{% endif %}</td>
                 </tr>
-                {% empty %}
-                    <tr>
-                        <td>-</td>
-                        <td class="text-center">No hay cuentas con saldo.</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                    </tr>
                 {% endfor %}
             </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="2" class="text-center">TOTALES</td>
+                    <td class="text-right">{{ gran_total_debe|floatformat:2 }}</td>
+                    <td class="text-right">{{ gran_total_haber|floatformat:2 }}</td>
+                    <td class="text-right">{{ gran_saldo_deudor|floatformat:2 }}</td>
+                    <td class="text-right">{{ gran_saldo_acreedor|floatformat:2 }}</td>
+                </tr>
+            </tfoot>
         </table>
     </div>
 
-    <!-- ESTADO DE RESULTADOS -->
+    <div class="page-break">
+        <h1>{{ empresa }}</h1>
+        <h2>LIBRO MAYOR</h2>
+        {% for dato in mayor_datos %}
+        <div class="mayor-titulo">{{ dato.cuenta.codigo }} - {{ dato.cuenta.nombre|upper }}</div>
+        <table pdf:widths="15%, 55%, 15%, 15%">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Referencia</th>
+                    <th>Debe</th>
+                    <th>Haber</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in dato.movimientos %}
+                <tr>
+                    <td class="text-center">{{ mov.asiento.fecha|date:"d/m/Y" }}</td>
+                    <td>Asiento #{{ mov.asiento.id }}</td>
+                    <td class="text-right">{% if mov.tipo == 'debe' %}{{ mov.monto|floatformat:2 }}{% else %}&nbsp;{% endif %}</td>
+                    <td class="text-right">{% if mov.tipo == 'haber' %}{{ mov.monto|floatformat:2 }}{% else %}&nbsp;{% endif %}</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="2" class="text-right">SUMAS:</td>
+                    <td class="text-right">{{ dato.total_debe|floatformat:2 }}</td>
+                    <td class="text-right">{{ dato.total_haber|floatformat:2 }}</td>
+                </tr>
+                <tr style="background-color: #dff0d8;">
+                    <td colspan="2" class="text-right"><strong>SALDO FINAL:</strong></td>
+                    <td colspan="2" class="text-center"><strong>{{ dato.saldo_final|floatformat:2 }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        {% endfor %}
+    </div>
+
     <div class="page-break">
         <h1>{{ empresa }}</h1>
         <h2>ESTADO DE RESULTADOS</h2>
@@ -176,15 +162,12 @@
                 <tr><td>Ventas Netas</td><td class="text-right">{{ er_total_ventas|floatformat:2 }}</td></tr>
                 <tr><td>(-) Costo de Ventas</td><td class="text-right">{{ er_total_costo_ventas|floatformat:2 }}</td></tr>
                 <tr class="total-row"><td>UTILIDAD BRUTA</td><td class="text-right">{{ er_utilidad_bruta|floatformat:2 }}</td></tr>
-                
                 <tr class="total-row"><td style="background-color: #bdc3c7;">GASTOS OPERATIVOS</td><td style="background-color: #bdc3c7;">&nbsp;</td></tr>
                 <tr><td>(-) Gastos Administrativos y de Ventas</td><td class="text-right">{{ er_total_gastos_operativos|floatformat:2 }}</td></tr>
                 <tr class="total-row"><td>UTILIDAD OPERATIVA</td><td class="text-right">{{ er_utilidad_operativa|floatformat:2 }}</td></tr>
-                
                 <tr class="total-row"><td style="background-color: #bdc3c7;">OTROS RESULTADOS</td><td style="background-color: #bdc3c7;">&nbsp;</td></tr>
                 <tr><td>(-) Gastos Financieros</td><td class="text-right">{{ er_total_gastos_financieros|floatformat:2 }}</td></tr>
                 <tr class="total-row"><td style="color:#2c3e50;">UTILIDAD ANTES DE IMPUESTOS</td><td class="text-right" style="color:#2c3e50;">{{ er_utilidad_antes_impuesto|floatformat:2 }}</td></tr>
-                
                 <tr><td>(-) Impuesto a la Renta (30%)</td><td class="text-right">{{ er_impuesto|floatformat:2 }}</td></tr>
                 <tr class="total-row" style="background-color: #dff0d8; color: #27ae60; font-size: 12pt;">
                     <td>UTILIDAD NETA DEL EJERCICIO</td>

@@ -69,7 +69,7 @@ class AsientoContable(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['fecha', 'id']
+        ordering = ['fecha', 'id'] 
         verbose_name = 'Asiento Contable'
         verbose_name_plural = 'Asientos Contables'
 
