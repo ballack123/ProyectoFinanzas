@@ -88,5 +88,85 @@
     </div>
 
     {% block extra_js %}{% endblock %}
+
+    <!-- ═══ CHATBOT UI ═══ -->
+    <div id="chatbot-launcher" onclick="toggleChatbot()" style="position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: #2980b9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1000; transition: transform 0.3s;">
+        <span style="font-size: 30px; color: white;">🤖</span>
+    </div>
+
+    <div id="chatbot-container" style="display: none; position: fixed; bottom: 90px; right: 20px; width: 350px; height: 500px; background: white; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); flex-direction: column; z-index: 1000; overflow: hidden; border: 1px solid #ddd; font-family: sans-serif;">
+        <div style="background: #2980b9; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0; font-size: 1.1rem;">Asistente ContaBot</h4>
+            <button onclick="toggleChatbot()" style="background: none; border: none; color: white; cursor: pointer; font-size: 24px; line-height: 1;">&times;</button>
+        </div>
+        <div id="chat-messages" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #f9f9f9;">
+            <div style="background: #e1f5fe; padding: 10px; border-radius: 10px; align-self: flex-start; max-width: 80%; font-size: 0.9rem; color: #333; line-height: 1.4;">
+                ¡Hola! Soy el bot **Conta**. ¿En qué puedo ayudarte hoy con tus finanzas?
+            </div>
+        </div>
+        <div style="padding: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; background: white;">
+            <input type="text" id="chat-input" placeholder="Pregunta algo..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none;">
+            <button onclick="sendMessage()" style="background: #2980b9; color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: bold;">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+    function toggleChatbot() {
+        const container = document.getElementById('chatbot-container');
+        container.style.display = container.style.display === 'none' ? 'flex' : 'none';
+        if (container.style.display === 'flex') {
+            document.getElementById('chat-input').focus();
+        }
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const messages = document.getElementById('chat-messages');
+        const text = input.value.trim();
+        
+        if (!text) return;
+        
+        // Mensaje del usuario
+        const userDiv = document.createElement('div');
+        userDiv.style = "background: #fff; padding: 10px; border-radius: 10px; align-self: flex-end; max-width: 85%; font-size: 0.9rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #eee; color: #333; line-height: 1.4;";
+        userDiv.innerText = text;
+        messages.appendChild(userDiv);
+        input.value = '';
+        messages.scrollTop = messages.scrollHeight;
+        
+        // Indicador de carga
+        const loadingDiv = document.createElement('div');
+        loadingDiv.style = "background: #e1f5fe; padding: 10px; border-radius: 10px; align-self: flex-start; max-width: 80%; font-size: 0.9rem; color: #333; font-style: italic;";
+        loadingDiv.innerText = "Pensando...";
+        messages.appendChild(loadingDiv);
+        messages.scrollTop = messages.scrollHeight;
+        
+        try {
+            const formData = new FormData();
+            formData.append('message', text);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+            const response = await fetch("{% url 'chatbot_api' %}", {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                loadingDiv.innerText = data.response;
+                loadingDiv.style.fontStyle = 'normal';
+            } else {
+                loadingDiv.innerText = "Error: " + data.error;
+            }
+        } catch (e) {
+            loadingDiv.innerText = "Error de conexión con el servidor.";
+        }
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    document.getElementById('chat-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') sendMessage();
+    });
+    </script>
 </body>
 </html>
