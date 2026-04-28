@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: gestion-financiera
+    env: python
+    buildCommand: bash build.sh
+    startCommand: bash start.sh
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEBUG
+        value: "False"

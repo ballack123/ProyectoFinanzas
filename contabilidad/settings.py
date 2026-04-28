@@ -4,7 +4,6 @@ Configuración de Django para el Sistema Contable.
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-import dj_database_url
 
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -13,12 +12,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-sistema-contable-dev-key-cambiar-en-produccion'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-sistema-contable-dev-key-cambiar-en-produccion')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes', 'on')
 
-ALLOWED_HOSTS = ['*']
+allowed_hosts = os.getenv('ALLOWED_HOSTS', '*')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts.split(',') if host.strip()]
+
+csrf_trusted_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip() for origin in csrf_trusted_origins.split(',') if origin.strip()
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -72,11 +77,15 @@ DATABASES = {
 
 # Si hay una base de datos externa configurada (Render, Supabase, Neon), usarla
 if os.environ.get('DATABASE_URL'):
+    import dj_database_url
+
     DATABASES['default'] = dj_database_url.config(
         default=os.environ.get('DATABASE_URL'),
         conn_max_age=600,
         conn_health_checks=True,
+        ssl_require=True,
     )
+    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
