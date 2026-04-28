@@ -796,7 +796,7 @@ def reporte_completo(request):
                 email.send(fail_silently=False)
                 messages.success(request, f'¡Éxito! El reporte PDF de "{empresa}" fue enviado a {correo}. Revisa tu bandeja de entrada.')
             except Exception as e:
-                messages.error(request, f'Error al enviar el correo. Verifica tu configuración en el archivo .env. Detalle: {str(e)}')
+                messages.error(request, f'Error técnico al enviar: {str(e)}. Revisa que en Render las variables EMAIL_HOST_USER y EMAIL_HOST_PASSWORD no tengan espacios.')
             
             return redirect('reporte_completo')
 
