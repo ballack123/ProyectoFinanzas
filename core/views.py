@@ -547,11 +547,15 @@ def reporte_completo(request):
             return redirect('reporte_completo')
 
         if correo:
+            if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+                messages.error(request, 'Falta configurar EMAIL_HOST_USER y EMAIL_HOST_PASSWORD para enviar correos.')
+                return redirect('reporte_completo')
+
             try:
                 email = EmailMessage(
                     subject=f'Reporte Financiero Completo - {empresa}',
                     body=f'Hola,\n\nAdjunto encontrarás el reporte financiero completo de {empresa} generado por el Sistema Contable ContaSys.\n\nSaludos!',
-                    from_email=settings.EMAIL_HOST_USER,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
                     to=[correo]
                 )
                 email.attach('Reporte_Completo.pdf', pdf_file.getvalue(), 'application/pdf')
@@ -776,11 +780,15 @@ def reporte_completo(request):
             return redirect('reporte_completo')
 
         if correo:
+            if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+                messages.error(request, 'Falta configurar EMAIL_HOST_USER y EMAIL_HOST_PASSWORD para enviar correos.')
+                return redirect('reporte_completo')
+
             try:
                 email = EmailMessage(
                     subject=f'Reporte Financiero Completo - {empresa}',
                     body=f'Hola,\n\nAdjunto encontrarás el reporte financiero completo de {empresa} generado por el Sistema Contable ContaSys.\n\nSaludos!',
-                    from_email=settings.EMAIL_HOST_USER,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
                     to=[correo]
                 )
                 email.attach('Reporte_Completo.pdf', pdf_file.getvalue(), 'application/pdf')
