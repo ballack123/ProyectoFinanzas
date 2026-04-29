@@ -20,7 +20,6 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
 import os
 import re
 import requests
@@ -853,52 +852,31 @@ def editar_asiento(request, asiento_id):
 
 # ─── CHATBOT DE ASISTENCIA FINANCIERA (GEMINI AI) ──────────────────────────
 
-@csrf_exempt
-def chatbot_api(request):
+def chatbot_respuesta_local(user_message, cuentas_db, ctx):
     """
-    Chatbot Experto en Contabilidad Computarizada.
-    """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Método no permitido'}, status=405)
-
-    user_message = request.POST.get('message', '').strip()
-    if not user_message:
-        return JsonResponse({'error': 'Mensaje vacío'}, status=400)
-
-    try:
-        ctx = get_reporte_context()
-        cuentas_db = list(CuentaContable.objects.values('codigo', 'nombre', 'tipo'))
-        resumen_cuentas = "\n".join([f"- {c['codigo']}: {c['nombre']} ({c['tipo']})" for c in cuentas_db[:50]])
+    Respuesta de respaldo cuando Gemini no esta disponible en local.
+    Mantiene util el chatbot para saludos, estado y validacion basica de cuentas.
         
-        api_key = os.environ.get('GEMINI_API_KEY')
-        if not api_key:
-            return JsonResponse({'error': 'Falta GEMINI_API_KEY'}, status=500)
-
-        system_prompt = f"""
-        Eres un Asistente Contable Inteligente llamado "Conta". 
-        TU BASE DE CONOCIMIENTO: Plan Contable General Empresarial (PCGE) 2020 de Perú.
-        DATOS: Utilidad Neta S/ {ctx.get('er_utilidad_neta', 0):,.2f}.
-        CUENTAS LOCALES: {resumen_cuentas}
-        
-        INSTRUCCIONES:
-        - Responde breve, técnico y amable.
-        - Usa el PCGE 2020 para validar cualquier cuenta.
-        - Si el monto > S/ 1000, advierte.
-        """
-
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-        payload = {
-            "contents": [{"parts": [{"text": f"{system_prompt}\n\nPregunta: {user_message}"}]}]
-        }
-        
-        response = requests.post(url, json=payload, timeout=30)
-        response.raise_for_status()
-        data = response.json()
-        
+        # Extraer la respuesta del JSON de Google
         bot_response = data['candidates'][0]['content']['parts'][0]['text']
         
-        return JsonResponse({'response': bot_response, 'status': 'success'})
-        
-    except Exception as e:
-        return JsonResponse({'error': f'Error de conexión: {str(e)}'}, status=500)
-
+        return JsonResponse({
+            'response': bot_response,
+            'status': 'success'
+        })
+    except requests.Timeout:
+        return JsonResponse({
+            'error': 'Gemini tardo demasiado en responder. Intenta otra vez en unos segundos.',
+            'status': 'error'
+        }, status=504)
+    except requests.RequestException:
+        return JsonResponse({
+            'response': chatbot_respuesta_local(user_message, cuentas_db, ctx),
+            'status': 'success',
+            'mode': 'local'
+        })
+    except Exception:
+        return JsonResponse({
+            'error': 'Gemini respondio con un formato inesperado. Intenta otra vez.',
+            'status': 'error'
+        }, status=500)
