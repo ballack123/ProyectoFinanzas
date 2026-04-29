@@ -12,7 +12,7 @@ env.bak/
 venv.bak/
 
 # Base de datos local de SQLite (generalmente no se sube a producción)
-db.sqlite3
+# db.sqlite3
 
 # Archivos de entorno y configuración local
 .env
