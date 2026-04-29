@@ -548,25 +548,22 @@ def reporte_completo(request):
             return redirect('reporte_completo')
 
         if correo:
-            user = settings.EMAIL_HOST_USER
-            pwd = settings.EMAIL_HOST_PASSWORD
-            
-            if not user or not pwd:
-                messages.error(request, 'Error: Las variables EMAIL_HOST_USER o EMAIL_HOST_PASSWORD están vacías en Render. Revisa el panel.')
+            if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+                messages.error(request, 'Falta configurar EMAIL_HOST_USER y EMAIL_HOST_PASSWORD para enviar correos.')
                 return redirect('reporte_completo')
 
             try:
                 email = EmailMessage(
                     subject=f'Reporte Financiero Completo - {empresa}',
-                    body=f'Hola,\n\nAdjunto encontrarás el reporte financiero completo de {empresa}.\n\nSaludos!',
-                    from_email=user,
+                    body=f'Hola,\n\nAdjunto encontrarás el reporte financiero completo de {empresa} generado por el Sistema Contable ContaSys.\n\nSaludos!',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
                     to=[correo]
                 )
                 email.attach('Reporte_Completo.pdf', pdf_file.getvalue(), 'application/pdf')
                 email.send(fail_silently=False)
-                messages.success(request, f'¡Enviado con éxito a {correo}!')
+                messages.success(request, f'¡Éxito! El reporte PDF de "{empresa}" fue enviado a {correo}. Revisa tu bandeja de entrada.')
             except Exception as e:
-                messages.error(request, f'Error técnico (SMTP): {str(e)}. Verifica que en Render no haya espacios en la contraseña.')
+                messages.error(request, f'Error al enviar el correo. Verifica tu configuración en el archivo .env. Detalle: {str(e)}')
             
             return redirect('reporte_completo')
 
