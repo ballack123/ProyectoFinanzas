@@ -40,3 +40,4 @@ def abs_value(valor):
         return abs(Decimal(str(valor)))
     except Exception:
         return valor
+#a

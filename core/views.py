@@ -607,3 +607,4 @@ def editar_asiento(request, asiento_id):
         ahora = timezone.localtime(timezone.now()).strftime("%d/%m/%Y a las %H:%M")
         messages.success(request, f"Asiento actualizado exitosamente el {ahora}.")
     return redirect('libro_diario')
+#a

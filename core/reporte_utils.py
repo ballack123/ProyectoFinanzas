@@ -91,3 +91,4 @@ def get_reporte_context():
     ctx['er_utilidad_neta'] = ctx['er_utilidad_antes_impuesto'] - ctx['er_impuesto']
 
     return ctx
+#a

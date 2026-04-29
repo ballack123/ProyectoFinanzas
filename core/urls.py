@@ -26,3 +26,4 @@ urlpatterns = [
     path('reportes/balance-general/', views.balance_general, name='balance_general'),
     path('reporte-completo/', views.reporte_completo, name='reporte_completo'),
 ]
+#a

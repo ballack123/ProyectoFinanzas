@@ -30,3 +30,4 @@ class AsientoContableAdmin(admin.ModelAdmin):
 class MovimientoAdmin(admin.ModelAdmin):
     list_display = ['asiento', 'cuenta', 'tipo', 'monto']
     list_filter = ['tipo', 'cuenta']
+#a

@@ -9,3 +9,4 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls')),  # Todas las rutas van a core
 ]
+#a
