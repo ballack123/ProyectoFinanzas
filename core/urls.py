@@ -27,5 +27,4 @@ urlpatterns = [
     path('reportes/estado-resultados/', views.estado_resultados, name='estado_resultados'),
     path('reportes/balance-general/', views.balance_general, name='balance_general'),
     path('reporte-completo/', views.reporte_completo, name='reporte_completo'),
-    path('asientos/chatbot/', views.chatbot_api, name='chatbot_api'),
 ]
