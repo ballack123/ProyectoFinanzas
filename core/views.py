@@ -539,7 +539,17 @@ def reporte_completo(request):
 
         context = get_reporte_context()
         context['empresa'] = empresa
-        context['logo_path'] = os.path.join(settings.BASE_DIR, 'UNILOGO.png')
+        
+        # --- LOGO EN BASE64 (Solución definitiva para Render) ---
+        import base64
+        try:
+            logo_path = os.path.join(settings.BASE_DIR, 'UNILOGO.png')
+            with open(logo_path, "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                context['logo_base64'] = f"data:image/png;base64,{encoded_string}"
+        except Exception:
+            context['logo_base64'] = ""
+
         html = render_to_string('reporte_pdf.html', context)
         
         # Una vez generado el HTML, el contexto ya no es necesario
@@ -642,10 +652,10 @@ def chatbot_api(request):
         # --- OBTENER TODA LA DATA REAL ---
         ctx = get_reporte_context()
         
-        # Resumen de Saldos (Balance de Comprobación)
+        # Resumen de Saldos (Balance de Comprobación) - LIMITADO PARA EVITAR ERROR 400
         saldos_resumen = "\n".join([
-            f"- {r['cuenta'].codigo} {r['cuenta'].nombre}: Debe {r['total_debe']}, Haber {r['total_haber']}" 
-            for r in ctx['bal_comp_datos'][:40]
+            f"- {r['cuenta'].codigo} {r['cuenta'].nombre}: S/ {r['total_debe'] - r['total_haber']}" 
+            for r in ctx['bal_comp_datos'][:20]
         ])
 
         # Resumen de Movimientos Recientes (Libro Diario)
