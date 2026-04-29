@@ -9,13 +9,3 @@ services:
         value: 3.11.9
       - key: DEBUG
         value: "False"
-      - key: SECRET_KEY
-        generateValue: true
-      - key: EMAIL_HOST_USER
-        sync: false
-      - key: EMAIL_HOST_PASSWORD
-        sync: false
-      - key: DEFAULT_FROM_EMAIL
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
