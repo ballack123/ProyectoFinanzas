@@ -90,27 +90,4 @@ def get_reporte_context():
     ctx['er_impuesto'] = (ctx['er_utilidad_antes_impuesto'] * Decimal('0.30')).quantize(Decimal('0.01')) if ctx['er_utilidad_antes_impuesto'] > 0 else Decimal('0')
     ctx['er_utilidad_neta'] = ctx['er_utilidad_antes_impuesto'] - ctx['er_impuesto']
 
-    # --- Balance General (Estado de Situación Financiera) ---
-    def obtener_detalles_balance(tipo_cuenta, deudora=True):
-        qs = CuentaContable.objects.filter(tipo=tipo_cuenta)
-        items = []
-        total = Decimal('0')
-        for c in qs:
-            t_d = c.movimientos.filter(tipo='debe').aggregate(t=Sum('monto'))['t'] or Decimal('0')
-            t_h = c.movimientos.filter(tipo='haber').aggregate(t=Sum('monto'))['t'] or Decimal('0')
-            saldo = (t_d - t_h) if deudora else (t_h - t_d)
-            if saldo != 0:
-                items.append({'cuenta': c, 'saldo': saldo})
-                total += saldo
-        return items, total
-
-    ctx['bg_activos'], ctx['bg_total_activos'] = obtener_detalles_balance('activo', deudora=True)
-    ctx['bg_pasivos'], ctx['bg_total_pasivos'] = obtener_detalles_balance('pasivo', deudora=False)
-    ctx['bg_patrimonio'], ctx['bg_total_patrimonio_base'] = obtener_detalles_balance('patrimonio', deudora=False)
-    
-    # Resultados acumulados (Utilidad Neta del ejercicio)
-    ctx['bg_resultados_acumulados'] = ctx['er_utilidad_neta']
-    ctx['bg_total_patrimonio'] = ctx['bg_total_patrimonio_base'] + ctx['bg_resultados_acumulados']
-    ctx['bg_total_pasivo_patrimonio'] = ctx['bg_total_pasivos'] + ctx['bg_total_patrimonio']
-
     return ctx
