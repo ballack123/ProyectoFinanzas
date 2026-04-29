@@ -11,6 +11,9 @@ Cada vista implementa una funcionalidad específica:
 - estado_resultados: Cálculo de utilidad/pérdida
 - balance_general: Activo = Pasivo + Patrimonio
 """
+import os
+import requests
+import gc
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Sum
@@ -18,8 +21,9 @@ from decimal import Decimal, InvalidOperation
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
-from django.http import HttpResponse
-from django.utils import timezone  # <-- IMPORTACIÓN PARA LA FECHA/HORA REAL
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 from xhtml2pdf import pisa
 from io import BytesIO
 from .models import CuentaContable, AsientoContable, Movimiento
@@ -535,7 +539,7 @@ def reporte_completo(request):
 
         context = get_reporte_context()
         context['empresa'] = empresa
-        html = render_to_string('reporte_pdf.html', context)
+        html = render_to_string('reporte_final_v2.html', context)
         
         # Una vez generado el HTML, el contexto ya no es necesario
         del context
@@ -624,7 +628,7 @@ def editar_asiento(request, asiento_id):
 @csrf_exempt
 def chatbot_api(request):
     """
-    Chatbot Experto en Contabilidad usando GROQ (Llama 3).
+    Chatbot Experto con Contexto Real de la Contabilidad Local.
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
@@ -634,32 +638,52 @@ def chatbot_api(request):
         return JsonResponse({'error': 'Mensaje vacío'}, status=400)
 
     try:
+        # --- OBTENER TODA LA DATA REAL ---
         ctx = get_reporte_context()
-        cuentas_db = list(CuentaContable.objects.values('codigo', 'nombre', 'tipo'))
-        resumen_cuentas = "\n".join([f"- {c['codigo']}: {c['nombre']} ({c['tipo']})" for c in cuentas_db[:50]])
         
+        # Resumen de Saldos (Balance de Comprobación)
+        saldos_resumen = "\n".join([
+            f"- {r['cuenta'].codigo} {r['cuenta'].nombre}: Debe {r['total_debe']}, Haber {r['total_haber']}" 
+            for r in ctx['bal_comp_datos'][:40]
+        ])
+
+        # Resumen de Movimientos Recientes (Libro Diario)
+        ultimos_asientos = AsientoContable.objects.prefetch_related('movimientos__cuenta').order_by('-id')[:10]
+        diario_resumen = ""
+        for a in ultimos_asientos:
+            movs = ", ".join([f"{m.cuenta.nombre} ({m.tipo} S/ {m.monto})" for m in a.movimientos.all()])
+            diario_resumen += f"- Asiento #{a.id} ({a.fecha}): {a.descripcion}. Movs: {movs}\n"
+
         api_key = os.environ.get('GROQ_API_KEY')
         if not api_key:
             return JsonResponse({'error': 'Falta GROQ_API_KEY'}, status=500)
 
         system_prompt = f"""
-        Eres "Conta", un Asistente Contable experto en el PCGE 2020 de Perú.
-        CONTEXTO: Utilidad Neta S/ {ctx.get('er_utilidad_neta', 0):,.2f}.
-        PLAN CUENTAS: {resumen_cuentas}
-        
+        Eres "Conta", el asistente inteligente de este sistema contable. 
+        Tienes acceso TOTAL a la base de datos del usuario.
+
+        ESTADO ACTUAL DEL NEGOCIO:
+        - Utilidad Neta: S/ {ctx.get('er_utilidad_neta', 0):,.2f}
+        - Total Activos: S/ {ctx.get('bg_total_activos', 0):,.2f}
+        - Total Pasivos: S/ {ctx.get('bg_total_pasivos', 0):,.2f}
+
+        DATOS DEL LIBRO DIARIO (Últimos 10 asientos):
+        {diario_resumen}
+
+        SALDOS DE CUENTAS (Balance de Comprobación):
+        {saldos_resumen}
+
         INSTRUCCIONES:
-        - Responde breve, técnico y amable.
-        - Usa el PCGE 2020.
-        - Si el gasto > S/ 1000, advierte.
+        1. Analiza los datos de arriba antes de responder.
+        2. Si el usuario pregunta por un asiento o saldo específico, dáselo basándote en la info de arriba.
+        3. Usa el PCGE 2020 para tus explicaciones.
+        4. Sé breve y directo.
         """
 
         url = "https://api.groq.com/openai/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         payload = {
-            "model": "llama3-8b-8192",
+            "model": "llama3-70b-8192", # Cambiamos al modelo de 70B para más inteligencia
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message}
@@ -668,10 +692,10 @@ def chatbot_api(request):
         
         response = requests.post(url, json=payload, headers=headers, timeout=20)
         response.raise_for_status()
-        data = response.json()
-        bot_response = data['choices'][0]['message']['content']
+        bot_response = response.json()['choices'][0]['message']['content']
         
         return JsonResponse({'response': bot_response, 'status': 'success'})
         
     except Exception as e:
-        return JsonResponse({'error': f'Error Groq: {str(e)}'}, status=500)
+        return JsonResponse({'error': f'Error de Contexto: {str(e)}'}, status=500)
+

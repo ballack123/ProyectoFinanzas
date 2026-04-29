@@ -66,4 +66,52 @@ def get_reporte_context():
     ctx['er_impuesto'] = (ctx['er_utilidad_antes_impuesto'] * Decimal('0.30')).quantize(Decimal('0.01')) if ctx['er_utilidad_antes_impuesto'] > 0 else Decimal('0')
     ctx['er_utilidad_neta'] = ctx['er_utilidad_antes_impuesto'] - ctx['er_impuesto']
 
-    return ctx
+    # --- NUEVO: Lógica del Balance General ---
+    bg_activos = []
+    bg_pasivos = []
+    bg_patrimonio = []
+    total_activos = total_pasivos = total_patrimonio = Decimal('0')
+
+    for cuenta in cuentas:
+        t = mapa_totales.get(cuenta.id, {'debe': Decimal('0'), 'haber': Decimal('0')})
+        saldo = t['debe'] - t['haber']
+        if cuenta.tipo == 'activo':
+            if saldo != 0:
+                bg_activos.append({'cuenta': cuenta, 'saldo': saldo})
+                total_activos += saldo
+        elif cuenta.tipo == 'pasivo':
+            saldo_acreedor = abs(saldo)
+            if saldo_acreedor != 0:
+                bg_pasivos.append({'cuenta': cuenta, 'saldo': saldo_acreedor})
+                total_pasivos += saldo_acreedor
+        elif cuenta.tipo == 'patrimonio':
+            saldo_acreedor = abs(saldo)
+            if saldo_acreedor != 0:
+                bg_patrimonio.append({'cuenta': cuenta, 'saldo': saldo_acreedor})
+                total_patrimonio += saldo_acreedor
+
+    ctx.update({
+        'bg_activos': bg_activos,
+        'bg_pasivos': bg_pasivos,
+        'bg_patrimonio': bg_patrimonio,
+        'bg_total_activos': total_activos,
+        'bg_total_pasivos': total_pasivos,
+        'bg_resultados_acumulados': ctx['er_utilidad_antes_impuesto'],
+        'bg_total_patrimonio': total_patrimonio + ctx['er_utilidad_antes_impuesto'],
+        'bg_total_pasivo_patrimonio': total_pasivos + total_patrimonio + ctx['er_utilidad_antes_impuesto'],
+    })
+
+    # Traer Libro Mayor también
+    mayor_datos = []
+    for cuenta in cuentas:
+        movs = Movimiento.objects.filter(cuenta=cuenta).select_related('asiento').order_by('asiento__fecha')
+        if movs.exists():
+            t = mapa_totales.get(cuenta.id, {'debe': Decimal('0'), 'haber': Decimal('0')})
+            mayor_datos.append({
+                'cuenta': cuenta, 'movimientos': movs,
+                'total_debe': t['debe'], 'total_haber': t['haber'],
+                'saldo_final': t['debe'] - t['haber'] if cuenta.tipo == 'activo' else t['haber'] - t['debe']
+            })
+    ctx['mayor_datos'] = mayor_datos
+
+    return ctx
