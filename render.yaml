@@ -4,7 +4,6 @@ services:
     env: python
     buildCommand: bash build.sh
     startCommand: bash start.sh
-    healthCheckPath: /healthz/
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
