@@ -2,8 +2,10 @@
 Configuración de Django para el Sistema Contable.
 """
 import os
+import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
+
 
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -12,18 +14,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-sistema-contable-dev-key-cambiar-en-produccion')
+SECRET_KEY = 'django-insecure-sistema-contable-dev-key-cambiar-en-produccion'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes', 'on')
+DEBUG = True
 
-allowed_hosts = os.getenv('ALLOWED_HOSTS', '*')
-ALLOWED_HOSTS = [host.strip() for host in allowed_hosts.split(',') if host.strip()]
-
-csrf_trusted_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip() for origin in csrf_trusted_origins.split(',') if origin.strip()
-]
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -67,25 +63,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'contabilidad.wsgi.application'
 
-# Base de datos SQLite o PostgreSQL externa (para evitar pérdida de datos en Render)
+# Base de datos SQLite
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-# Si hay una base de datos externa configurada (Render, Supabase, Neon), usarla
-if os.environ.get('DATABASE_URL'):
-    import dj_database_url
-
-    DATABASES['default'] = dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-        ssl_require=True,
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600
     )
-    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
+}
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -109,13 +93,11 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Configuración de Envío de Correos (SMTP Gmail)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 465
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = True
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
-EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '20'))
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+#a

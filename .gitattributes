@@ -1,3 +1,0 @@
-*.sh text eol=lf
-Procfile text eol=lf
-render.yaml text eol=lf

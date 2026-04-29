@@ -133,3 +133,4 @@ class Command(BaseCommand):
             f'  Asientos registrados: {AsientoContable.objects.count()}\n'
             f'  Movimientos creados: {Movimiento.objects.count()}\n'
         ))
+#a

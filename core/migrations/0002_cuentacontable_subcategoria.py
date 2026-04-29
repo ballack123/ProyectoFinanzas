@@ -16,3 +16,4 @@ class Migration(migrations.Migration):
             field=models.CharField(blank=True, choices=[('', 'General'), ('costo_ventas', 'Costo de Ventas'), ('gasto_operativo', 'Gasto Operativo'), ('gasto_financiero', 'Gasto Financiero'), ('otro_ingreso', 'Otro Ingreso'), ('otro_gasto', 'Otro Gasto')], default='', max_length=20, verbose_name='Subcategoría (EE.RR.)'),
         ),
     ]
+#a

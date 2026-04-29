@@ -125,3 +125,4 @@ class Movimiento(models.Model):
 
     def __str__(self):
         return f"{self.cuenta} — {self.get_tipo_display()}: S/ {self.monto:,.2f}"
+    #a
