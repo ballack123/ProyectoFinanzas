@@ -754,7 +754,49 @@ def balance_general(request):
     return render(request, 'balance_general.html', context)
 
 
+# ─── REPORTE COMPLETO EN PDF ───────────────────────────────────────────────────
 
+def reporte_completo(request):
+    """
+    Vista que muestra el formulario para solicitar el reporte completo.
+    Al recibir POST, genera el PDF y lo envía por correo electrónico.
+    """
+    if request.method == 'POST':
+        empresa = request.POST.get('empresa', 'Mi Empresa')
+        correo = request.POST.get('correo', '')
+
+        context = get_reporte_context()
+        context['empresa'] = empresa
+
+        html = render_to_string('reporte_pdf.html', context)
+        pdf_file = BytesIO()
+        pisa_status = pisa.CreatePDF(BytesIO(html.encode('UTF-8')), dest=pdf_file)
+
+        if pisa_status.err:
+            messages.error(request, 'Ocurrió un error al generar el PDF.')
+            return redirect('reporte_completo')
+
+        if correo:
+            if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+                messages.error(request, 'Falta configurar EMAIL_HOST_USER y EMAIL_HOST_PASSWORD para enviar correos.')
+                return redirect('reporte_completo')
+
+            try:
+                email = EmailMessage(
+                    subject=f'Reporte Financiero Completo - {empresa}',
+                    body=f'Hola,\n\nAdjunto encontrarás el reporte financiero completo de {empresa} generado por el Sistema Contable ContaSys.\n\nSaludos!',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[correo]
+                )
+                email.attach('Reporte_Completo.pdf', pdf_file.getvalue(), 'application/pdf')
+                email.send(fail_silently=False)
+                messages.success(request, f'¡Éxito! El reporte PDF de "{empresa}" fue enviado a {correo}. Revisa tu bandeja de entrada.')
+            except Exception as e:
+                messages.error(request, f'Error técnico al enviar: {str(e)}. Revisa que en Render las variables EMAIL_HOST_USER y EMAIL_HOST_PASSWORD no tengan espacios.')
+            
+            return redirect('reporte_completo')
+
+    return render(request, 'menu_reporte.html')
 
 
 def eliminar_asiento(request, asiento_id):
