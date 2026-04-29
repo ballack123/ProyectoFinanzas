@@ -173,75 +173,85 @@
                     <td>UTILIDAD NETA DEL EJERCICIO</td>
                     <td class="text-right">{{ er_utilidad_neta|floatformat:2 }}</td>
                 </tr>
+            </tbody>
         </table>
     </div>
 
-    <!-- SECCIÓN BALANCE GENERAL (REFORZADA) -->
     <div class="page-break">
-        <h1 style="text-align: center;">{{ empresa }}</h1>
-        <h2 style="text-align: center;">BALANCE GENERAL</h2>
-        
-        <table style="width: 100%; border: 1px solid #000;">
-            <tr>
-                <th style="background-color: #eee; width: 70%;">ACTIVOS</th>
-                <th style="background-color: #eee; width: 30%;">MONTO (S/)</th>
-            </tr>
-            {% for item in bg_activos %}
-            <tr>
-                <td>{{ item.cuenta.nombre }}</td>
-                <td style="text-align: right;">{{ item.saldo|floatformat:2 }}</td>
-            </tr>
-            {% endfor %}
-            <tr style="font-weight: bold; background-color: #f9f9f9;">
-                <td>TOTAL ACTIVOS</td>
-                <td style="text-align: right;">{{ bg_total_activos|floatformat:2 }}</td>
-            </tr>
+        <h1>{{ empresa }}</h1>
+        <h2>BALANCE GENERAL (ESTADO DE SITUACIÓN FINANCIERA)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th colspan="2">ACTIVOS</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in bg_activos %}
+                <tr>
+                    <td>{{ item.cuenta.nombre }}</td>
+                    <td class="text-right">S/ {{ item.saldo|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td>TOTAL ACTIVOS</td>
+                    <td class="text-right">S/ {{ bg_total_activos|floatformat:2 }}</td>
+                </tr>
+            </tbody>
         </table>
 
         <br>
 
-        <table style="width: 100%; border: 1px solid #000;">
-            <tr>
-                <th style="background-color: #eee; width: 70%;">PASIVOS</th>
-                <th style="background-color: #eee; width: 30%;">MONTO (S/)</th>
-            </tr>
-            {% for item in bg_pasivos %}
-            <tr>
-                <td>{{ item.cuenta.nombre }}</td>
-                <td style="text-align: right;">{{ item.saldo|floatformat:2 }}</td>
-            </tr>
-            {% endfor %}
-            <tr style="font-weight: bold; background-color: #f9f9f9;">
-                <td>TOTAL PASIVOS</td>
-                <td style="text-align: right;">{{ bg_total_pasivos|floatformat:2 }}</td>
-            </tr>
+        <table>
+            <thead>
+                <tr>
+                    <th colspan="2" style="background-color: #c0392b;">PASIVOS</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in bg_pasivos %}
+                <tr>
+                    <td>{{ item.cuenta.nombre }}</td>
+                    <td class="text-right">S/ {{ item.saldo|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td>TOTAL PASIVOS</td>
+                    <td class="text-right">S/ {{ bg_total_pasivos|floatformat:2 }}</td>
+                </tr>
+            </tbody>
         </table>
 
         <br>
 
-        <table style="width: 100%; border: 1px solid #000;">
-            <tr>
-                <th style="background-color: #eee; width: 70%;">PATRIMONIO</th>
-                <th style="background-color: #eee; width: 30%;">MONTO (S/)</th>
-            </tr>
-            {% for item in bg_patrimonio %}
-            <tr>
-                <td>{{ item.cuenta.nombre }}</td>
-                <td style="text-align: right;">{{ item.saldo|floatformat:2 }}</td>
-            </tr>
-            {% endfor %}
-            <tr>
-                <td>Resultados acumulados (Utilidad)</td>
-                <td style="text-align: right;">{{ bg_resultados_acumulados|floatformat:2 }}</td>
-            </tr>
-            <tr style="font-weight: bold; background-color: #f9f9f9;">
-                <td>TOTAL PATRIMONIO</td>
-                <td style="text-align: right;">{{ bg_total_patrimonio|floatformat:2 }}</td>
-            </tr>
-            <tr style="background-color: #333; color: #fff; font-weight: bold;">
-                <td>TOTAL PASIVO + PATRIMONIO</td>
-                <td style="text-align: right;">{{ bg_total_pasivo_patrimonio|floatformat:2 }}</td>
-            </tr>
+        <table>
+            <thead>
+                <tr>
+                    <th colspan="2" style="background-color: #8e44ad;">PATRIMONIO</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in bg_patrimonio %}
+                <tr>
+                    <td>{{ item.cuenta.nombre }}</td>
+                    <td class="text-right">S/ {{ item.saldo|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td>Resultados acumulados (Utilidad)</td>
+                    <td class="text-right">S/ {{ bg_resultados_acumulados|floatformat:2 }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>TOTAL PATRIMONIO</td>
+                    <td class="text-right">S/ {{ bg_total_patrimonio|floatformat:2 }}</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr style="background-color: #2c3e50; color: white; font-weight: bold;">
+                    <td>TOTAL PASIVO + PATRIMONIO</td>
+                    <td class="text-right">S/ {{ bg_total_pasivo_patrimonio|floatformat:2 }}</td>
+                </tr>
+            </tfoot>
         </table>
     </div>
 </body>
