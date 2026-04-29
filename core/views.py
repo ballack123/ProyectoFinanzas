@@ -619,4 +619,59 @@ def editar_asiento(request, asiento_id):
         ahora = timezone.localtime(timezone.now()).strftime("%d/%m/%Y a las %H:%M")
         messages.success(request, f"Asiento actualizado exitosamente el {ahora}.")
     return redirect('libro_diario')
-#a
+# ─── CHATBOT DE ASISTENCIA FINANCIERA (GROQ AI) ──────────────────────────
+
+@csrf_exempt
+def chatbot_api(request):
+    """
+    Chatbot Experto en Contabilidad usando GROQ (Llama 3).
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    user_message = request.POST.get('message', '').strip()
+    if not user_message:
+        return JsonResponse({'error': 'Mensaje vacío'}, status=400)
+
+    try:
+        ctx = get_reporte_context()
+        cuentas_db = list(CuentaContable.objects.values('codigo', 'nombre', 'tipo'))
+        resumen_cuentas = "\n".join([f"- {c['codigo']}: {c['nombre']} ({c['tipo']})" for c in cuentas_db[:50]])
+        
+        api_key = os.environ.get('GROQ_API_KEY')
+        if not api_key:
+            return JsonResponse({'error': 'Falta GROQ_API_KEY'}, status=500)
+
+        system_prompt = f"""
+        Eres "Conta", un Asistente Contable experto en el PCGE 2020 de Perú.
+        CONTEXTO: Utilidad Neta S/ {ctx.get('er_utilidad_neta', 0):,.2f}.
+        PLAN CUENTAS: {resumen_cuentas}
+        
+        INSTRUCCIONES:
+        - Responde breve, técnico y amable.
+        - Usa el PCGE 2020.
+        - Si el gasto > S/ 1000, advierte.
+        """
+
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "llama3-8b-8192",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
+            ]
+        }
+        
+        response = requests.post(url, json=payload, headers=headers, timeout=20)
+        response.raise_for_status()
+        data = response.json()
+        bot_response = data['choices'][0]['message']['content']
+        
+        return JsonResponse({'response': bot_response, 'status': 'success'})
+        
+    except Exception as e:
+        return JsonResponse({'error': f'Error Groq: {str(e)}'}, status=500)
