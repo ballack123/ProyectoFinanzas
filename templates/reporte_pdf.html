@@ -175,6 +175,71 @@
                 </tr>
             </tbody>
         </table>
+    <div class="page-break">
+        <h1>{{ empresa }}</h1>
+        <h2>BALANCE GENERAL</h2>
+        <table pdf:widths="50%, 50%">
+            <thead>
+                <tr>
+                    <th style="background-color: #2980b9;">ACTIVOS</th>
+                    <th style="background-color: #c0392b;">PASIVOS</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="vertical-align: top; padding: 0;">
+                        <table style="border: none; margin: 0;">
+                            {% for item in bg_activos %}
+                            <tr>
+                                <td style="border: none;">{{ item.cuenta.nombre }}</td>
+                                <td style="border: none;" class="text-right">S/ {{ item.saldo|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="total-row" style="background-color: #ecf0f1;">
+                                <td style="border: none;">TOTAL ACTIVOS</td>
+                                <td style="border: none;" class="text-right">S/ {{ bg_total_activos|floatformat:2 }}</td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="vertical-align: top; padding: 0;">
+                        <table style="border: none; margin: 0;">
+                            {% for item in bg_pasivos %}
+                            <tr>
+                                <td style="border: none;">{{ item.cuenta.nombre }}</td>
+                                <td style="border: none;" class="text-right">S/ {{ item.saldo|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="total-row">
+                                <td style="border: none;">TOTAL PASIVOS</td>
+                                <td style="border: none;" class="text-right">S/ {{ bg_total_pasivos|floatformat:2 }}</td>
+                            </tr>
+                            <tr><td colspan="2" style="border: none; height: 10px;"></td></tr>
+                            <tr><th colspan="2" style="background-color: #8e44ad; color: white;">PATRIMONIO</th></tr>
+                            {% for item in bg_patrimonio %}
+                            <tr>
+                                <td style="border: none;">{{ item.cuenta.nombre }}</td>
+                                <td style="border: none;" class="text-right">S/ {{ item.saldo|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                            <tr>
+                                <td style="border: none;">Resultados acumulados</td>
+                                <td style="border: none;" class="text-right">S/ {{ bg_resultados_acumulados|floatformat:2 }}</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td style="border: none;">TOTAL PATRIMONIO</td>
+                                <td style="border: none;" class="text-right">S/ {{ bg_total_patrimonio|floatformat:2 }}</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr style="background-color: #2c3e50; color: white; font-weight: bold; font-size: 11pt;">
+                    <td class="text-center">TOTAL ACTIVOS: S/ {{ bg_total_activos|floatformat:2 }}</td>
+                    <td class="text-center">TOTAL PASIVO + PATRIMONIO: S/ {{ bg_total_pasivo_patrimonio|floatformat:2 }}</td>
+                </tr>
+            </tfoot>
+        </table>
     </div>
 </body>
 </html>
