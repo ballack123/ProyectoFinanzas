@@ -539,7 +539,8 @@ def reporte_completo(request):
 
         context = get_reporte_context()
         context['empresa'] = empresa
-        html = render_to_string('reporte_final_v2.html', context)
+        context['logo_path'] = os.path.join(settings.BASE_DIR, 'UNILOGO.png')
+        html = render_to_string('reporte_pdf.html', context)
         
         # Una vez generado el HTML, el contexto ya no es necesario
         del context
