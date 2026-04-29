@@ -522,44 +522,56 @@ def balance_general(request):
 
 # ─── REPORTE COMPLETO EN PDF ───────────────────────────────────────────────────
 
+import gc # Recolector de basura
+from django.utils import timezone
+
 def reporte_completo(request):
-    """
-    Vista que muestra el formulario para solicitar el reporte completo.
-    Al recibir POST, genera el PDF y lo envía por correo electrónico.
-    """
     if request.method == 'POST':
         empresa = request.POST.get('empresa', 'Mi Empresa')
         correo = request.POST.get('correo', '')
 
+        # Liberamos RAM antes de empezar
+        gc.collect()
+
         context = get_reporte_context()
         context['empresa'] = empresa
-
         html = render_to_string('reporte_pdf.html', context)
+        
+        # Una vez generado el HTML, el contexto ya no es necesario
+        del context
+        
         pdf_file = BytesIO()
         pisa_status = pisa.CreatePDF(BytesIO(html.encode('UTF-8')), dest=pdf_file)
+        
+        # Liberamos el HTML de la memoria inmediatamente
+        del html
+        gc.collect()
 
         if pisa_status.err:
-            messages.error(request, 'Ocurrió un error al generar el PDF.')
+            messages.error(request, 'Error al generar PDF.')
             return redirect('reporte_completo')
 
         if correo:
             try:
                 email = EmailMessage(
-                    subject=f'Reporte Financiero Completo - {empresa}',
-                    body=f'Hola,\n\nAdjunto encontrarás el reporte financiero completo de {empresa} generado por el Sistema Contable ContaSys.\n\nSaludos!',
+                    subject=f'Reporte - {empresa}',
+                    body=f'Reporte generado el {timezone.localtime(timezone.now()).strftime("%d/%m/%Y")}.',
                     from_email=settings.EMAIL_HOST_USER,
                     to=[correo]
                 )
-                email.attach('Reporte_Completo.pdf', pdf_file.getvalue(), 'application/pdf')
+                email.attach('Reporte.pdf', pdf_file.getvalue(), 'application/pdf')
+                # Enviamos el correo (esto es lo que más tarda)
                 email.send(fail_silently=False)
-                messages.success(request, f'¡Éxito! El reporte PDF de "{empresa}" fue enviado a {correo}. Revisa tu bandeja de entrada.')
+                messages.success(request, '¡Reporte enviado con éxito!')
             except Exception as e:
-                messages.error(request, f'Error al enviar el correo. Verifica tu configuración en el archivo .env. Detalle: {str(e)}')
+                messages.error(request, f'Error: {str(e)}')
+            finally:
+                pdf_file.close()
+                gc.collect()
             
             return redirect('reporte_completo')
 
     return render(request, 'menu_reporte.html')
-
 
 def eliminar_asiento(request, asiento_id):
     """
