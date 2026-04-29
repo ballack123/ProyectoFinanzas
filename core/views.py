@@ -26,10 +26,6 @@ from .models import CuentaContable, AsientoContable, Movimiento
 from .reporte_utils import get_reporte_context
 
 
-def healthz(request):
-    return HttpResponse('ok', content_type='text/plain')
-
-
 # ─── PÁGINA PRINCIPAL ──────────────────────────────────────────────────────────
 
 def index(request):
