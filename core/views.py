@@ -805,12 +805,12 @@ def editar_asiento(request, asiento_id):
     return redirect('libro_diario')
 
 
-# ─── CHATBOT DE ASISTENCIA FINANCIERA (GEMINI AI) ──────────────────────────
+# ─── CHATBOT DE ASISTENCIA FINANCIERA (GROQ AI) ──────────────────────────
 
 @csrf_exempt
 def chatbot_api(request):
     """
-    Chatbot Experto en Contabilidad Computarizada.
+    Chatbot Experto en Contabilidad usando GROQ (Llama 3).
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
@@ -824,35 +824,44 @@ def chatbot_api(request):
         cuentas_db = list(CuentaContable.objects.values('codigo', 'nombre', 'tipo'))
         resumen_cuentas = "\n".join([f"- {c['codigo']}: {c['nombre']} ({c['tipo']})" for c in cuentas_db[:50]])
         
-        api_key = os.environ.get('GEMINI_API_KEY')
+        api_key = os.environ.get('GROQ_API_KEY')
         if not api_key:
-            return JsonResponse({'error': 'Falta GEMINI_API_KEY'}, status=500)
+            return JsonResponse({'error': 'Falta GROQ_API_KEY en la configuración'}, status=500)
 
         system_prompt = f"""
-        Eres un Asistente Contable Inteligente llamado "Conta". 
-        TU BASE DE CONOCIMIENTO: Plan Contable General Empresarial (PCGE) 2020 de Perú.
-        DATOS: Utilidad Neta S/ {ctx.get('er_utilidad_neta', 0):,.2f}.
-        CUENTAS LOCALES: {resumen_cuentas}
+        Eres "Conta", un Asistente Contable experto en el PCGE 2020 de Perú.
+        CONTEXTO ACTUAL: Utilidad Neta S/ {ctx.get('er_utilidad_neta', 0):,.2f}.
+        PLAN DE CUENTAS: {resumen_cuentas}
         
         INSTRUCCIONES:
-        - Responde breve, técnico y amable.
-        - Usa el PCGE 2020 para validar cualquier cuenta.
-        - Si el monto > S/ 1000, advierte.
+        - Responde de forma breve, técnica pero amable.
+        - Usa el PCGE 2020 para validar asientos.
+        - Si un gasto supera S/ 1000, emite una alerta presupuestaria.
         """
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
         payload = {
-            "contents": [{"parts": [{"text": f"{system_prompt}\n\nPregunta: {user_message}"}]}]
+            "model": "llama3-8b-8192",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            "temperature": 0.5
         }
         
-        response = requests.post(url, json=payload, timeout=30)
+        response = requests.post(url, json=payload, headers=headers, timeout=20)
         response.raise_for_status()
         data = response.json()
         
-        bot_response = data['candidates'][0]['content']['parts'][0]['text']
+        bot_response = data['choices'][0]['message']['content']
         
         return JsonResponse({'response': bot_response, 'status': 'success'})
         
     except Exception as e:
-        return JsonResponse({'error': f'Error de conexión: {str(e)}'}, status=500)
+        return JsonResponse({'error': f'Error Groq: {str(e)}'}, status=500)
+
 
